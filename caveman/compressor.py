@@ -4,6 +4,7 @@ import re
 
 from .rules import (
     LEVEL1_PHRASES,
+    LEVEL2_PHRASES,
     LEVEL2_SUBS,
     LEVEL3_PHRASE_REPLACEMENTS,
     LEVEL3_REMOVALS,
@@ -39,7 +40,8 @@ class CavemanCompressor:
         result = restore(result, placeholders)
         result = re.sub(r"[ \t]+", " ", result).strip()
         result = re.sub(r"\n{3,}", "\n\n", result)
-        return result
+        # Never erase the entire prompt — return original if nothing survives
+        return result if result else text.strip()
 
     def report(self, text: str) -> None:
         """Compress *text* and pretty-print the token-savings breakdown."""
@@ -93,6 +95,15 @@ class CavemanCompressor:
         return text
 
     def _apply_level2(self, text: str) -> str:
+        # Multi-word phrases first (longest first)
+        for phrase, abbrev in sorted(LEVEL2_PHRASES, key=lambda x: len(x[0]), reverse=True):
+            text = re.sub(
+                r"\b" + re.escape(phrase) + r"\b",
+                abbrev,
+                text,
+                flags=re.IGNORECASE,
+            )
+        # Single-word substitutions
         for full, abbrev in LEVEL2_SUBS.items():
             text = re.sub(
                 r"\b" + re.escape(full) + r"\b",
@@ -103,8 +114,8 @@ class CavemanCompressor:
         return text
 
     def _apply_level3(self, text: str) -> str:
-        # Multi-word phrase replacements first (longest-first order from rules.py)
-        for phrase, replacement in LEVEL3_PHRASE_REPLACEMENTS:
+        # Multi-word phrase replacements first (longest first)
+        for phrase, replacement in sorted(LEVEL3_PHRASE_REPLACEMENTS, key=lambda x: len(x[0]), reverse=True):
             text = re.sub(
                 r"\b" + re.escape(phrase) + r"\b",
                 replacement,
