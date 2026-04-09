@@ -66,6 +66,23 @@ class CavemanCompressor:
     # ------------------------------------------------------------------
 
     def _apply_compression(self, text: str) -> str:
+        # Split into sentences and separators, process each sentence with fallback
+        parts = re.split(r'(\n+|(?<=[.!?])\s+)', text)
+        return "".join(
+            part if (not part or not part.strip()) else self._compress_segment(part)
+            for part in parts
+        )
+
+    def _compress_segment(self, text: str) -> str:
+        """Compress one sentence, falling back a level if no word characters survive."""
+        for level in range(self._level, 0, -1):
+            compressed = self._apply_up_to_level(text, level)
+            if re.search(r'\w', compressed):
+                return compressed
+        # Even level 1 deleted all word content — return original
+        return text
+
+    def _apply_up_to_level(self, text: str, level: int) -> str:
         # User-defined custom rules take priority
         for from_word, to_word in self._custom_rules.items():
             text = re.sub(
@@ -75,11 +92,11 @@ class CavemanCompressor:
                 flags=re.IGNORECASE,
             )
 
-        if self._level >= 1:
+        if level >= 1:
             text = self._apply_level1(text)
-        if self._level >= 2:
+        if level >= 2:
             text = self._apply_level2(text)
-        if self._level >= 3:
+        if level >= 3:
             text = self._apply_level3(text)
 
         return text

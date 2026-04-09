@@ -22,8 +22,9 @@ def test_level1_removes_could_you_please():
 
 def test_level1_removes_i_was_wondering():
     c = CavemanCompressor(level=1)
-    result = c.compress("I was wondering if you could help me")
+    result = c.compress("I was wondering if you could help me debug this")
     assert "i was wondering" not in result.lower()
+    assert "debug" in result.lower()
 
 
 def test_level1_keeps_content_words():
@@ -218,3 +219,43 @@ def test_doc_example_level2():
     assert "fn" in result
     assert "->" in result
     assert "can you please" not in result.lower()
+
+
+# ------------------------------------------------------------------
+# Safety: never erase the entire prompt
+# ------------------------------------------------------------------
+
+def test_all_filler_returns_original():
+    c = CavemanCompressor(level=3)
+    assert c.compress("Please") == "Please"
+    assert c.compress("Can you please") == "Can you please"
+
+
+def test_empty_input_returns_empty():
+    c = CavemanCompressor(level=3)
+    assert c.compress("") == ""
+
+
+# ------------------------------------------------------------------
+# Per-sentence fallback
+# ------------------------------------------------------------------
+
+def test_filler_sentence_falls_back_to_lower_level():
+    # "Can you please" is entirely removed at level 3 and level 1;
+    # the second sentence should still be compressed normally.
+    c = CavemanCompressor(level=3)
+    result = c.compress("Can you please. Write a function.")
+    # The filler sentence must survive (original returned)
+    assert "Can you please" in result
+    # The content sentence is still compressed
+    assert "fn" in result
+
+
+def test_filler_only_sentence_preserved_in_multi_sentence():
+    # A sentence that consists entirely of level-1 filler should be
+    # returned verbatim when even level-1 deletes it, while adjacent
+    # content sentences are compressed at the configured level.
+    c = CavemanCompressor(level=2)
+    result = c.compress("Can you please. Explain the function.")
+    assert "Can you please" in result
+    assert "fn" in result
