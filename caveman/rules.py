@@ -1,0 +1,153 @@
+"""Word/phrase substitution maps for each compression level."""
+
+# Level 1: Filler phrases to remove entirely (longest first enforced in compressor)
+LEVEL1_PHRASES = [
+    "i was wondering if you could",
+    "i would like you to",
+    "i'd like you to",
+    "would you be able to",
+    "could you please",
+    "can you please",
+    "i need you to",
+    "i was hoping you could",
+    "i was hoping",
+    "please could you",
+    "please can you",
+    "please",
+    "kindly",
+]
+
+# Level 2: Single-word substitutions — tech abbreviations + common action shortcuts
+LEVEL2_SUBS = {
+    # Tech abbreviations
+    "function": "fn",
+    "functions": "fns",
+    "database": "db",
+    "databases": "dbs",
+    "repository": "repo",
+    "repositories": "repos",
+    "application": "app",
+    "applications": "apps",
+    "configuration": "config",
+    "configurations": "configs",
+    "directory": "dir",
+    "directories": "dirs",
+    "environment": "env",
+    "environments": "envs",
+    "variable": "var",
+    "variables": "vars",
+    "parameter": "param",
+    "parameters": "params",
+    "argument": "arg",
+    "arguments": "args",
+    "implementation": "impl",
+    "implementations": "impls",
+    "interface": "iface",
+    "interfaces": "ifaces",
+    "message": "msg",
+    "messages": "msgs",
+    "object": "obj",
+    "objects": "objs",
+    "string": "str",
+    "integer": "int",
+    "boolean": "bool",
+    "number": "num",
+    "numbers": "nums",
+    "attribute": "attr",
+    "attributes": "attrs",
+    "password": "pwd",
+    "document": "doc",
+    "documents": "docs",
+    "package": "pkg",
+    "packages": "pkgs",
+    "service": "svc",
+    "services": "svcs",
+    "request": "req",
+    "requests": "reqs",
+    "response": "resp",
+    "responses": "resps",
+    "error": "err",
+    "errors": "errs",
+    "maximum": "max",
+    "minimum": "min",
+    "generate": "gen",
+    "initialize": "init",
+    "initialization": "init",
+    "returns": "->",
+    "pointer": "ptr",
+    "reference": "ref",
+    "references": "refs",
+    "module": "mod",
+    "modules": "mods",
+    "structure": "struct",
+    "structures": "structs",
+    "authentication": "auth",
+    "authorization": "authz",
+    "infrastructure": "infra",
+    "kubernetes": "k8s",
+    "container": "ctr",
+    "containers": "ctrs",
+    "dependency": "dep",
+    "dependencies": "deps",
+    "property": "prop",
+    "properties": "props",
+    "component": "comp",
+    "components": "comps",
+    "controller": "ctrl",
+    "controllers": "ctrls",
+    "asynchronous": "async",
+    "synchronous": "sync",
+    # Action shortcuts
+    "write": "make",
+    "create": "make",
+    "build": "make",
+    "using": "use",
+    "implement": "impl",
+    "utilize": "use",
+}
+
+# Level 3: Multi-word phrase replacements (apply before single-word rules, longest first)
+LEVEL3_PHRASE_REPLACEMENTS = [
+    ("in order to", "->"),
+    ("take a look at", "check"),
+    ("as well as", "+"),
+    ("in addition to", "+"),
+    ("instead of", "not"),
+    ("make sure", "ensure"),
+    ("looking for", "find"),
+    ("look at", "check"),
+]
+
+# Level 3: Single-word replacements
+LEVEL3_WORD_REPLACEMENTS = {
+    "and": "+",
+    "or": "|",
+    "with": "w/",
+    "without": "w/o",
+    "because": "bc",
+}
+
+# Level 3: Words to remove entirely
+LEVEL3_REMOVALS = frozenset({
+    # Articles
+    "the", "a", "an",
+    # Copulas and auxiliaries
+    "is", "are", "was", "were", "be", "been", "being",
+    "have", "has", "had",
+    "do", "does", "did",
+    "will", "would", "should", "may", "might", "shall", "could",
+    # Relative / demonstrative
+    "that", "which", "this", "these", "those",
+    # Personal pronouns
+    "i", "you", "it", "we", "they",
+    "me", "him", "her", "us", "them",
+    "my", "your", "its", "our", "their",
+    # Prepositions
+    "of", "in", "on", "at", "by", "for", "from", "as",
+    "into", "through", "about", "between",
+    "after", "before", "above", "below",
+    "out", "off", "over", "under",
+    "to",
+    # Filler adverbs
+    "also", "just", "very", "really", "quite", "rather", "then",
+})
