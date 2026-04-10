@@ -2,7 +2,16 @@
 
 > *"Me have big brain idea. Token cost money. Word cost token. Less word = less money. UGH."*
 
-![caveman discovers fire](https://media.giphy.com/media/l0HlBO7eyXzSZkJri/giphy.gif)
+```text
+        ___
+       (o o)    <-- caveman
+        ) (
+    ___|___|___
+   /   _____   \    *bonk bonk*
+  /   /TOKEN\   \       O
+ /   /  $$$$  \  \     /|\ 
+/___/___________\___\  / \
+```
 
 ---
 
@@ -10,41 +19,63 @@
 
 Caveman discover fire. Caveman discover wheel. Now caveman discover that long prompt cost many token and token cost many dollar.
 
-**That's this library.**
+You give Claude big wordy prompt. Claude understand. But you pay many token. Why? Word like "could you please be so kind as to" mean nothing. Claude no need. Caveman no need. Token wasted. Wallet cry.
 
-`caveman-prompts` compresses your verbose, politeness-laden, filler-stuffed LLM prompts down to the raw semantic core — **without losing meaning**. You feed it *"Could you please be so kind as to perhaps write a function that returns a list of integers?"* and it grunts back *"make fn -> list ints?"*
+**This library fix. Me compress. Claude still understand. You save money. UGH.**
 
-Claude understands. Tokens saved. Wallet happy. UGH.
+You feed it:
+
+> *"Could you please be so kind as to perhaps write a function that returns a list of integers?"*
+
+It grunt back:
+
+> *"make fn -> list ints?"*
+
+Same meaning. Fewer token. Caveman win.
 
 ---
 
-## Why Should Me Care?
+## Why Me Use?
 
-- **LLM APIs charge per token.** Your polite preambles cost real money.
-- **Shorter prompts = faster responses.** The model doesn't need your "I was wondering if maybe..."
-- **Caveman-tested, mammoth-approved.** If a hominid with a rock can express intent, so can your prompts.
+```text
+  💰💰                  <-- your wallet without caveman-prompts
+     /    \
+    | 😭  |
+     \    /
+
+  💰💰💰💰💰💰💰💰💰💰   <-- your wallet with caveman-prompts
+     /    \
+    | 😄  |
+     \    /
+```
+
+- **Token cost money.** Polite filler burn coin for nothing.
+- **Short prompt = fast answer.** Claude no need your "I was wondering if maybe..."
+- **Caveman-tested, mammoth-approved.** If hominid with rock can express intent, your prompt can too.
 
 ---
 
-## Install
+## Me Install
 
 ```bash
 pip install caveman-prompts
 ```
 
-Or, if you are caveman:
-
-```bash
-pip get thing
-```
-
 ---
 
-## The Three Levels of Grunting
+## Three Level Of Grunt
 
 ### Level 1 — Polite Caveman
 
-Strips filler phrases and pleasantries. Still uses full words like a civilized hominid.
+Strip filler. Strip pleasantry. Keep full word. Caveman still wear fur but no say "could you please."
+
+```text
+    ___
+   (^ ^)   me civilized
+    ) (    me just remove
+   /| |\   unnecessary greeting
+  /  |  \
+```
 
 ```python
 from caveman import CavemanCompressor
@@ -54,16 +85,24 @@ c.compress("Could you please write a function that returns a list?")
 # -> "write a function that returns a list?"
 ```
 
-*You: Can you please help me?*
-*Level 1: Help me?*
+*You say: Can you please help me?*
+*Level 1 say: Help me?*
 
-Tribe elders nod in approval.
+Tribe elder nod. Good enough.
 
 ---
 
-### Level 2 — Default Caveman (Recommended)
+### Level 2 — Default Caveman (Me Recommend)
 
-Abbreviates tech jargon. `function` → `fn`. `database` → `db`. `returns` → `->`. The whole vocabulary of a senior engineer who has stopped caring about newcomers.
+Now caveman also shrink tech word. `function` become `fn`. `database` become `db`. `returns` become `->`. Caveman know code. Caveman just no waste syllable.
+
+```text
+    ___
+   (- -)   function?  fn!
+    ) (    database?  db!
+  __|_|__  integer?   int!
+ /  | |  \
+```
 
 ```python
 c = CavemanCompressor(level=2)
@@ -71,15 +110,20 @@ c.compress("Can you please write a function that returns a list?")
 # -> "make fn -> a list?"
 ```
 
-This is the sweet spot. A senior engineer who has transcended verbosity. A caveman who has tasted the mammoth of efficiency and never looked back.
-
-![caveman nod](https://media.giphy.com/media/l0HlBO7eyXzSZkJri/giphy.gif)
+This sweet spot. Use this. Claude understand. Token shrink. Life good.
 
 ---
 
 ### Level 3 — Full Caveman Mode 🪨
 
-Articles? Gone. Pronouns? Banished to the shadow realm. Connectives replaced with symbols. This is the linguistic equivalent of a caveman painting on a cave wall.
+Article? Gone. Pronoun? Gone. Auxiliary verb? Gone. Connective become symbol. This cave painting. This pure intent.
+
+```text
+  o
+ /|    <-- all caveman need
+ |
+/ \
+```
 
 ```python
 c = CavemanCompressor(level=3)
@@ -87,7 +131,7 @@ c.compress("Can you please write a function that returns a list?")
 # -> "make fn -> list?"
 ```
 
-| Human says | Caveman says |
+| You say | Caveman say |
 | --- | --- |
 | `and` | `+` |
 | `or` | `\|` |
@@ -98,13 +142,13 @@ c.compress("Can you please write a function that returns a list?")
 | `in order to` | `->` |
 | `for example` | `eg` |
 
-Level 3 caveman doesn't acknowledge your pronouns. Caveman only sees the concept.
+Level 3 no care about pronoun. Level 3 only see concept.
 
 ---
 
-## Usage
+## Me Use It
 
-### Basic Compression
+### Basic Squish
 
 ```python
 from caveman import CavemanCompressor
@@ -115,15 +159,15 @@ print(result)
 # -> make fn -> list ints?
 ```
 
-### See the Token Savings Report
+### See How Many Token Me Save
 
 ```python
 c.report("Can you please write a function that returns a list of integers?")
 ```
 
-Prints a breakdown of how many tokens you clubbed to death. Very satisfying.
+Print breakdown. Show token before, token after. Very satisfying. Like after big hunt.
 
-### Chain It Like a Caveman Chief
+### Chain Many Thing Together
 
 ```python
 result = (
@@ -135,9 +179,18 @@ result = (
 # -> use db store config vars
 ```
 
-### Sacred Words — Protect the Mammoth
+### Sacred Word — Caveman No Touch
 
-Some words must not be touched. Class names. API keys. The name of your firstborn. Mark them sacred:
+Some word must stay. Class name. API name. Firstborn name. Mark sacred. Caveman respect.
+
+```text
+   /\___/\
+  ( 0   0 )  <-- sacred mammoth
+  (  ___  )      caveman no
+   \_____/       touch him
+   || | ||
+   || | ||
+```
 
 ```python
 c = CavemanCompressor(level=3).add_sacred("MyClassName")
@@ -145,19 +198,28 @@ c.compress("Please refactor MyClassName to use the database")
 # -> refactor MyClassName use db
 ```
 
-`MyClassName` survives the compression ice age unscathed.
+`MyClassName` survive ice age. Unchanged. Protected.
 
-### Custom Rules
+### Teach New Word
 
 ```python
 c = CavemanCompressor().add_rule("grok", "understand")
 ```
 
-Teach the caveman new words. Very exciting for everyone involved.
+Caveman learn. Caveman grow.
 
-### Code Blocks Are Preserved
+### Code Block Safe
 
-Your actual code is sacred. Caveman is smart enough to leave triple-backtick blocks alone:
+Caveman smart. Caveman no touch code block. Triple backtick = sacred fire.
+
+```text
+      )
+    )  )
+   ) ) )        <-- sacred fire
+  (((((((
+   |   |
+   |   |
+```
 
 ```python
 prompt = """
@@ -174,65 +236,75 @@ print(c.compress(prompt))
 # [code block untouched]
 ```
 
-Caveman respects the sacred fire of triple backticks.
-
 ---
 
-## Real-World Example
+## Real Example — Me Show All Level
 
-**Original prompt:**
+```text
+  BEFORE:  ████████████████████████  76 tokens  😰
+  LEVEL 1: ████████████████          52 tokens  😐
+  LEVEL 2: ████████████              38 tokens  🙂
+  LEVEL 3: ███████                   24 tokens  😎
+```
+
+**Original (many word, many token):**
 > *"Can you please write an asynchronous function that retrieves all user records from the database and returns them as a list of objects, and make sure it handles errors properly."*
 
-**Level 1** — filler stripped, full words kept:
+**Level 1** — filler gone, word still big:
 > *"write an asynchronous function that retrieves all user records from the database and returns them as a list of objects, and make sure it handles errors properly."*
 
-**Level 2** — tech jargon abbreviated:
+**Level 2** — tech word shrink:
 > *"make an async fn that retrieves all user records from the db and -> them as a list of objs, and make sure it handles errs properly."*
 
-**Level 3** — full caveman. articles, pronouns, auxiliaries gone:
+**Level 3** — full caveman, only meaning survive:
 > *"make async fn retrieves all user records db + -> list objs, + ensure handles errs properly."*
 
-Claude still understands. Your AWS bill weeps slightly less. Caveman grunt with satisfaction.
-
-![money saved](https://media.giphy.com/media/3o7TKtnuHOHHUjR38Y/giphy.gif)
+Claude still understand. AWS bill weep less. Caveman grunt with satisfaction.
 
 ---
 
-## API Reference
+## Caveman API Rock
 
 ### `CavemanCompressor(level=2)`
 
-| Method | What It Does |
+| Method | What Do |
 | --- | --- |
-| `.compress(text)` | Returns compressed string. Me use this most. |
-| `.report(text)` | Prints token savings breakdown. Very pretty. |
-| `.set_level(n)` | Change grunt intensity (1–3). Chainable. |
-| `.add_sacred(word)` | Protect word from compression forever. |
-| `.add_rule(from, to)` | Add custom substitution. Teach new word. |
+| `.compress(text)` | Squish prompt. Return small version. |
+| `.report(text)` | Show token savings. Print pretty. |
+| `.set_level(n)` | Change grunt power (1–3). Chain ok. |
+| `.add_sacred(word)` | Protect word forever. Caveman no touch. |
+| `.add_rule(from, to)` | Teach new substitution. Caveman learn. |
 
 ---
 
-## FAQ
+## Question Caveman Get A Lot
 
-**Q: Will this break my prompts?**
-A: Level 1 and 2 — no. Level 3 — Claude handles it fine. We tested. Claude smart.
+**Q: This break prompt?**
+A: Level 1, 2 — no. Level 3 — Claude handle fine. Me test. Claude smart.
 
-**Q: What about punctuation and newlines?**
-A: Preserved. Caveman respects structure. Caveman not animal.
+**Q: Punctuation survive?**
+A: Yes. Newline survive. Caveman respect structure. Caveman not animal.
 
-**Q: Why is it called caveman-prompts?**
-A: Because the goal is maximum meaning with minimum words. Also because *"Unga bunga compress token"* was already taken as a PyPI name. (Actually it wasn't. We just liked caveman.)
-
----
-
-## Contributing
-
-Found a word that should be removed? A phrase that should be shortened? Submit a PR.
-
-Or just grunt in the issues tab. We'll figure it out.
+**Q: Why called caveman-prompts?**
+A: Maximum meaning. Minimum word. Also caveman funny. UGH.
 
 ---
 
-*Made with ❤️ and very few unnecessary words.*
+## Me Contribute?
 
-*UGH.*
+```text
+    ___
+   (o O)  <-- caveman see bug
+    ) (
+   /| |\   "this word not
+  /  |  \   need remove??
+            ME FIX. PR NOW."
+```
+
+Find word that should go? Phrase that should shrink? Submit PR.
+
+Or grunt in issue tab. Me figure out.
+
+---
+
+*Made w/ few word. Much meaning. UGH.*
