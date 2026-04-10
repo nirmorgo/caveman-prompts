@@ -58,7 +58,9 @@ Same meaning. Fewer token. Caveman win.
 ## Me Install
 
 ```bash
-pip install caveman-prompts
+git clone https://github.com/nirmorgo/caveman-prompts.git
+cd caveman-prompts
+pip install -e .
 ```
 
 ---
