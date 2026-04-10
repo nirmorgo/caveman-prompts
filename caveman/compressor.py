@@ -3,7 +3,6 @@
 import re
 
 from .rules import (
-    LEVEL1_PHRASES,
     LEVEL2_PHRASES,
     LEVEL2_SUBS,
     LEVEL3_PHRASE_REPLACEMENTS,
@@ -12,9 +11,29 @@ from .rules import (
 )
 from .sacred import build_sacred_regex, protect, restore
 from .report import print_report
+from .nlp import apply_level1_nlp, apply_level2_nlp, apply_level3_nlp
 
-# Pre-compiled regex for level-3 word removals (static data, built once).
-_REMOVAL_RE = re.compile(
+# Pre-compiled regexes — all static rule data compiled once at import time.
+_L2_PHRASE_RE: list[tuple[re.Pattern, str]] = [
+    (re.compile(r"\b" + re.escape(phrase) + r"\b", re.IGNORECASE), abbrev)
+    for phrase, abbrev in sorted(LEVEL2_PHRASES, key=lambda x: len(x[0]), reverse=True)
+]
+
+_L3_PHRASE_RE: list[tuple[re.Pattern, str]] = [
+    (re.compile(r"\b" + re.escape(phrase) + r"\b", re.IGNORECASE), repl)
+    for phrase, repl in sorted(LEVEL3_PHRASE_REPLACEMENTS, key=lambda x: len(x[0]), reverse=True)
+]
+
+_L3_WORD_RE: list[tuple[re.Pattern, str]] = [
+    (re.compile(r"\b" + re.escape(word) + r"\b", re.IGNORECASE), repl)
+    for word, repl in LEVEL3_WORD_REPLACEMENTS.items()
+]
+
+# Replacement values that must survive POS-based removal (e.g. "w/o" tagged as ADP, "no" as DET).
+# L2 abbreviations are included because spaCy can mistag unknown words like "rm" as ADP.
+_L3_SKIP_LOWER: frozenset[str] = frozenset(LEVEL3_WORD_REPLACEMENTS.values()) | frozenset(LEVEL2_SUBS.values())
+
+_L3_REMOVAL_RE = re.compile(
     r"\b(?:" + "|".join(
         re.escape(w) for w in sorted(LEVEL3_REMOVALS, key=len, reverse=True)
     ) + r")\b",
@@ -66,24 +85,26 @@ class CavemanCompressor:
     # ------------------------------------------------------------------
 
     def _apply_compression(self, text: str) -> str:
-        # Split into sentences and separators, process each sentence with fallback
         parts = re.split(r'(\n+|(?<=[.!?])\s+)', text)
         return "".join(
-            part if (not part or not part.strip()) else self._compress_segment(part)
+            self._compress_segment(part) if part and part.strip() else part
             for part in parts
         )
 
     def _compress_segment(self, text: str) -> str:
-        """Compress one sentence, falling back a level if no word characters survive."""
+        """Compress one sentence, falling back a level if no word characters survive.
+
+        If every level strips all word content the segment is pure filler and is
+        erased entirely. The full-prompt guard in compress() ensures the overall
+        result is never blank.
+        """
         for level in range(self._level, 0, -1):
             compressed = self._apply_up_to_level(text, level)
             if re.search(r'\w', compressed):
                 return compressed
-        # Even level 1 deleted all word content — return original
-        return text
+        return ""
 
     def _apply_up_to_level(self, text: str, level: int) -> str:
-        # User-defined custom rules take priority
         for from_word, to_word in self._custom_rules.items():
             text = re.sub(
                 r"\b" + re.escape(from_word) + r"\b",
@@ -93,7 +114,7 @@ class CavemanCompressor:
             )
 
         if level >= 1:
-            text = self._apply_level1(text)
+            text = apply_level1_nlp(text)
         if level >= 2:
             text = self._apply_level2(text)
         if level >= 3:
@@ -101,55 +122,17 @@ class CavemanCompressor:
 
         return text
 
-    def _apply_level1(self, text: str) -> str:
-        for phrase in sorted(LEVEL1_PHRASES, key=len, reverse=True):
-            text = re.sub(
-                r"\b" + re.escape(phrase) + r"[\s,]*",
-                "",
-                text,
-                flags=re.IGNORECASE,
-            )
-        return text
-
     def _apply_level2(self, text: str) -> str:
-        # Multi-word phrases first (longest first)
-        for phrase, abbrev in sorted(LEVEL2_PHRASES, key=lambda x: len(x[0]), reverse=True):
-            text = re.sub(
-                r"\b" + re.escape(phrase) + r"\b",
-                abbrev,
-                text,
-                flags=re.IGNORECASE,
-            )
-        # Single-word substitutions
-        for full, abbrev in LEVEL2_SUBS.items():
-            text = re.sub(
-                r"\b" + re.escape(full) + r"\b",
-                abbrev,
-                text,
-                flags=re.IGNORECASE,
-            )
-        return text
+        for pattern, abbrev in _L2_PHRASE_RE:
+            text = pattern.sub(abbrev, text)
+        return apply_level2_nlp(text, LEVEL2_SUBS)
 
     def _apply_level3(self, text: str) -> str:
-        # Multi-word phrase replacements first (longest first)
-        for phrase, replacement in sorted(LEVEL3_PHRASE_REPLACEMENTS, key=lambda x: len(x[0]), reverse=True):
-            text = re.sub(
-                r"\b" + re.escape(phrase) + r"\b",
-                replacement,
-                text,
-                flags=re.IGNORECASE,
-            )
-
-        # Single-word replacements
-        for word, replacement in LEVEL3_WORD_REPLACEMENTS.items():
-            text = re.sub(
-                r"\b" + re.escape(word) + r"\b",
-                replacement,
-                text,
-                flags=re.IGNORECASE,
-            )
-
-        # Single-word removals (one combined pass)
-        text = _REMOVAL_RE.sub("", text)
-
-        return text
+        for pattern, replacement in _L3_PHRASE_RE:
+            text = pattern.sub(replacement, text)
+        for pattern, replacement in _L3_WORD_RE:
+            text = pattern.sub(replacement, text)
+        # POS-based removal (DET, AUX, PRON, ADP) — re-parsed after replacements above
+        text = apply_level3_nlp(text, _L3_SKIP_LOWER)
+        # Remaining filler adverbs not catchable by POS alone
+        return _L3_REMOVAL_RE.sub("", text)

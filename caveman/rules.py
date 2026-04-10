@@ -1,62 +1,6 @@
 """Word/phrase substitution maps for each compression level."""
 
-# ---------------------------------------------------------------------------
-# Level 1 — strip filler phrases and politeness
-# ---------------------------------------------------------------------------
-
-LEVEL1_PHRASES = [
-    # Polite hedging
-    "i was wondering if you could",
-    "it would be great if you could",
-    "i'd appreciate if you could",
-    "i was thinking maybe you could",
-    "would it be possible to",
-    "would you be able to",
-    "is it possible to",
-    "do you think you could",
-    "i was hoping you could",
-    "i would like you to",
-    "i would like to",
-    "i'd like you to",
-    # Preamble patterns
-    "i'm trying to",
-    "i am trying to",
-    "i'm looking to",
-    "i am looking to",
-    "i was hoping",
-    "i was thinking",
-    # Direct filler requests
-    "could you please",
-    "can you please",
-    "would you mind",
-    "please could you",
-    "please can you",
-    "could you help me",
-    "can you help me",
-    "i need you to",
-    "i want you to",
-    "i'd like to",
-    "i want to",
-    "i need to",
-    # Apologies
-    "sorry to bother you but",
-    "sorry but",
-    # Greetings
-    "hey there",
-    "hey",
-    "hi",
-    "hello",
-    # Trailing softeners
-    "if you don't mind",
-    "if possible",
-    # Filler words
-    "help me",
-    "please",
-    "kindly",
-    "basically",
-    "essentially",
-    "honestly",
-]
+# Level 1 is handled entirely by spaCy in caveman/nlp.py.
 
 # ---------------------------------------------------------------------------
 # Level 2 — tech abbreviations + action shortcuts
@@ -64,10 +8,27 @@ LEVEL1_PHRASES = [
 
 # Multi-word tech phrases (applied before single-word subs)
 LEVEL2_PHRASES = [
-    ("regular expression", "regex"),
+    # AI / ML
+    ("large language models", "LLMs"),
+    ("large language model", "LLM"),
+    ("natural language processing", "NLP"),
+    ("artificial intelligence", "AI"),
+    ("machine learning", "ML"),
+    # Web / API
+    ("application programming interface", "API"),
+    ("user interface", "UI"),
+    ("user experience", "UX"),
+    ("message queue", "MQ"),
+    ("key value", "KV"),
+    # DevOps
+    ("continuous deployment", "CD"),
+    ("continuous delivery", "CD"),
+    ("continuous integration", "CI"),
+    # Existing
     ("regular expressions", "regexes"),
-    ("pull request", "PR"),
+    ("regular expression", "regex"),
     ("pull requests", "PRs"),
+    ("pull request", "PR"),
     ("command line", "CLI"),
     ("file system", "fs"),
     ("end to end", "e2e"),
@@ -93,6 +54,8 @@ LEVEL2_SUBS = {
     "attributes": "attrs",
     "callback": "cb",
     "callbacks": "cbs",
+    "context": "ctx",
+    "contexts": "ctxs",
     "definition": "def",
     "definitions": "defs",
     "expression": "expr",
@@ -103,6 +66,8 @@ LEVEL2_SUBS = {
     "implementations": "impls",
     "interface": "iface",
     "interfaces": "ifaces",
+    "iterator": "iter",
+    "iterators": "iters",
     "parameter": "param",
     "parameters": "params",
     "pointer": "ptr",
@@ -113,11 +78,17 @@ LEVEL2_SUBS = {
     "references": "refs",
     "structure": "struct",
     "structures": "structs",
+    "template": "tmpl",
+    "templates": "tmpls",
+    "token": "tok",
+    "tokens": "toks",
     "value": "val",
     "values": "vals",
     "variable": "var",
     "variables": "vars",
     # --- Architecture ---
+    "channel": "chan",
+    "channels": "chans",
     "component": "comp",
     "components": "comps",
     "container": "ctr",
@@ -128,26 +99,39 @@ LEVEL2_SUBS = {
     "dependencies": "deps",
     "exception": "exc",
     "exceptions": "excs",
+    "instance": "inst",
+    "instances": "insts",
     "library": "lib",
     "libraries": "libs",
     "middleware": "mw",
     "module": "mod",
     "modules": "mods",
+    "namespace": "ns",
     "package": "pkg",
     "packages": "pkgs",
+    "processor": "proc",
+    "processors": "procs",
     "service": "svc",
     "services": "svcs",
+    "subscription": "sub",
+    "subscriptions": "subs",
     # --- Infrastructure ---
     "address": "addr",
     "addresses": "addrs",
     "application": "app",
     "applications": "apps",
+    "buffer": "buf",
+    "buffers": "bufs",
     "configuration": "config",
     "configurations": "configs",
     "connection": "conn",
     "connections": "conns",
+    "credential": "cred",
+    "credentials": "creds",
     "database": "db",
     "databases": "dbs",
+    "deployment": "deploy",
+    "deployments": "deploys",
     "destination": "dest",
     "directory": "dir",
     "directories": "dirs",
@@ -156,19 +140,46 @@ LEVEL2_SUBS = {
     "infrastructure": "infra",
     "kubernetes": "k8s",
     "memory": "mem",
+    "metadata": "meta",
+    "migration": "mig",
+    "migrations": "migs",
+    "notification": "notif",
+    "notifications": "notifs",
     "operation": "op",
     "operations": "ops",
+    "permission": "perm",
+    "permissions": "perms",
+    "pipeline": "pipe",
+    "pipelines": "pipes",
     "repository": "repo",
     "repositories": "repos",
     "source": "src",
     "temporary": "tmp",
     "transaction": "tx",
     "transactions": "txs",
+    "version": "ver",
+    "versions": "vers",
+    # --- ML / AI ---
+    "checkpoint": "ckpt",
+    "embedding": "emb",
+    "embeddings": "embs",
+    "evaluation": "eval",
+    "gradient": "grad",
+    "gradients": "grads",
+    "hyperparameter": "hparam",
+    "hyperparameters": "hparams",
+    "inference": "infer",
+    "prediction": "pred",
+    "predictions": "preds",
+    "vector": "vec",
+    "vectors": "vecs",
     # --- Descriptors ---
     "administrator": "admin",
     "asynchronous": "async",
     "authentication": "auth",
     "authorization": "authz",
+    "collection": "coll",
+    "collections": "colls",
     "command": "cmd",
     "commands": "cmds",
     "development": "dev",
@@ -176,6 +187,7 @@ LEVEL2_SUBS = {
     "documents": "docs",
     "error": "err",
     "errors": "errs",
+    "format": "fmt",
     "information": "info",
     "maximum": "max",
     "minimum": "min",
@@ -196,10 +208,16 @@ LEVEL2_SUBS = {
     # --- Symbols ---
     "returns": "->",
     # --- Action shortcuts ---
+    "aggregate": "agg",
+    "aggregation": "agg",
+    "aggregations": "aggs",
     "build": "make",
     "create": "make",
+    "decode": "dec",
     "delete": "del",
     "describe": "desc",
+    "deserialize": "deser",
+    "encode": "enc",
     "execute": "exec",
     "generate": "gen",
     "implement": "impl",
@@ -209,9 +227,11 @@ LEVEL2_SUBS = {
     "optimize": "opt",
     "remove": "rm",
     "retrieve": "get",
+    "serialize": "ser",
     "update": "upd",
     "using": "use",
     "utilize": "use",
+    "validate": "valid",
     "write": "make",
 }
 
@@ -221,9 +241,33 @@ LEVEL2_SUBS = {
 
 # Multi-word phrase replacements (compressor sorts longest-first)
 LEVEL3_PHRASE_REPLACEMENTS = [
+    # Comparisons / equality
+    ("not equal to", "!="),
+    ("greater than or equal", ">="),
+    ("less than or equal", "<="),
+    ("greater than", ">"),
+    ("more than", ">"),
+    ("less than", "<"),
+    ("equal to", "="),
+    # Logic / flow
+    ("as long as", "while"),
+    ("as soon as", "when"),
+    ("as a result", "so"),
+    ("in other words", "ie"),
+    ("for instance", "eg"),
+    ("for example", "eg"),
+    ("such as", "eg"),
+    ("in addition to", "+"),
+    ("as well as", "+"),
+    # State / status
+    ("not working", "broken"),
+    ("relies on", "needs"),
+    ("depends on", "needs"),
+    ("right now", "now"),
+    ("at this point", "now"),
+    # Existing
     ("take a look at", "check"),
     ("whether or not", "if"),
-    ("in addition to", "+"),
     ("different from", "!="),
     ("the same as", "="),
     ("be able to", "can"),
@@ -231,11 +275,8 @@ LEVEL3_PHRASE_REPLACEMENTS = [
     ("instead of", "not"),
     ("similar to", "like"),
     ("a lot of", "many"),
-    ("for example", "eg"),
-    ("as well as", "+"),
     ("make sure", "ensure"),
     ("looking for", "find"),
-    ("such as", "eg"),
     ("needs to", "must"),
     ("need to", "must"),
     ("have to", "must"),
@@ -250,17 +291,30 @@ LEVEL3_PHRASE_REPLACEMENTS = [
 # Single-word replacements
 LEVEL3_WORD_REPLACEMENTS = {
     # Connectors
-    "and": "+",
-    "or": "|",
-    "with": "w/",
     "without": "w/o",
     "because": "bc",
     "however": "but",
     "although": "but",
     "therefore": "so",
     "otherwise": "else",
+    "when": "if",
     "versus": "vs",
-    # Negative contractions -> caveman negation
+    # Caveman simplifications
+    "issue": "bug",
+    "problem": "bug",
+    "deprecated": "old",
+    "legacy": "old",
+    "automatically": "auto",
+    "optional": "opt",
+    "important": "key",
+    "correct": "ok",
+    "incorrect": "bad",
+    "invalid": "bad",
+    "valid": "ok",
+    "large": "big",
+    "null": "nil",
+    "undefined": "nil",
+    # Negative contractions → caveman negation
     "don't": "no",
     "doesn't": "no",
     "didn't": "no",
@@ -275,36 +329,13 @@ LEVEL3_WORD_REPLACEMENTS = {
     "weren't": "not",
 }
 
-# Words to remove entirely
+# Filler words to remove at level 3 that aren't caught by POS-based removal.
+# Determiners, auxiliaries, pronouns, and prepositions are handled by apply_level3_nlp.
+# "that" (SCONJ as relative-clause marker) is not ADP/DET/PRON so must be listed here.
 LEVEL3_REMOVALS = frozenset({
-    # Articles
-    "the", "a", "an",
-    # Copulas / auxiliaries
-    "is", "are", "was", "were", "be", "been", "being",
-    "have", "has", "had",
-    "do", "does", "did",
-    "will", "would", "should", "could", "may", "might", "shall",
-    # Relative / demonstrative
-    "that", "which", "this", "these", "those",
-    # Personal pronouns
-    "i", "you", "it", "we", "they",
-    "me", "him", "her", "us", "them",
-    "my", "your", "its", "our", "their",
-    # Pronoun contractions (prevent dangling 'm, 've, etc.)
-    "i'm", "i've", "i'll", "i'd",
-    "you're", "you've", "you'll", "you'd",
-    "we're", "we've", "we'll", "we'd",
-    "they're", "they've", "they'll", "they'd",
-    "he's", "she's", "it's", "that's", "there's", "here's",
-    # Prepositions
-    "of", "in", "on", "at", "by", "for", "from", "as",
-    "into", "through", "about", "between",
-    "after", "before", "above", "below",
-    "out", "off", "over", "under",
-    "to",
-    # Filler adverbs
-    "also", "just", "very", "really", "quite", "rather", "then",
-    "simply", "currently", "actually",
+    "that",
+    "also", "very", "really", "quite", "rather", "then",
+    "currently", "actually",
     "certainly", "definitely", "completely", "entirely",
     "particularly", "specifically", "generally",
 })

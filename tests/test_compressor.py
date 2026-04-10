@@ -89,23 +89,10 @@ def test_level3_removes_that():
     assert " that " not in f" {result} "
 
 
-def test_level3_replaces_and():
+def test_level3_removes_relative_that():
     c = CavemanCompressor(level=3)
-    result = c.compress("read and write the file")
-    assert "+" in result
-    assert " and " not in f" {result} "
-
-
-def test_level3_replaces_or():
-    c = CavemanCompressor(level=3)
-    result = c.compress("read or write the file")
-    assert "|" in result
-
-
-def test_level3_with_becomes_w_slash():
-    c = CavemanCompressor(level=3)
-    result = c.compress("connect with the server")
-    assert "w/" in result
+    result = c.compress("a function that returns something")
+    assert " that " not in f" {result} "
 
 
 # ------------------------------------------------------------------
@@ -240,22 +227,70 @@ def test_empty_input_returns_empty():
 # Per-sentence fallback
 # ------------------------------------------------------------------
 
-def test_filler_sentence_falls_back_to_lower_level():
-    # "Can you please" is entirely removed at level 3 and level 1;
-    # the second sentence should still be compressed normally.
+def test_filler_sentence_erased_in_multi_sentence():
+    # A sentence that is pure filler is erased; adjacent content sentences
+    # are still compressed at the configured level.
     c = CavemanCompressor(level=3)
     result = c.compress("Can you please. Write a function.")
-    # The filler sentence must survive (original returned)
-    assert "Can you please" in result
-    # The content sentence is still compressed
+    assert "Can you please" not in result
     assert "fn" in result
 
 
-def test_filler_only_sentence_preserved_in_multi_sentence():
-    # A sentence that consists entirely of level-1 filler should be
-    # returned verbatim when even level-1 deletes it, while adjacent
-    # content sentences are compressed at the configured level.
+def test_filler_only_sentence_erased_adjacent_content_compressed():
     c = CavemanCompressor(level=2)
     result = c.compress("Can you please. Explain the function.")
-    assert "Can you please" in result
+    assert "Can you please" not in result
     assert "fn" in result
+
+
+# ------------------------------------------------------------------
+# L3 POS removal: sacred placeholders survive
+# ------------------------------------------------------------------
+
+def test_numbers_survive_level3():
+    c = CavemanCompressor(level=3)
+    result = c.compress("Increase the pool size from 5 to 20.")
+    assert "5" in result
+    assert "20" in result
+
+
+def test_numbers_after_preposition_survive():
+    c = CavemanCompressor(level=3)
+    result = c.compress("Set the timeout to 30 seconds.")
+    assert "30" in result
+
+
+# ------------------------------------------------------------------
+# L3 POS removal: bare file paths survive
+# ------------------------------------------------------------------
+
+def test_bare_filenames_survive_level3():
+    c = CavemanCompressor(level=3)
+    result = c.compress("Copy the function from utils.py to helpers.py.")
+    assert "utils.py" in result
+    assert "helpers.py" in result
+
+
+def test_various_file_extensions_survive():
+    c = CavemanCompressor(level=3)
+    for ext in ["py", "js", "ts", "go", "rs", "java"]:
+        result = c.compress(f"Edit the file main.{ext}")
+        assert f"main.{ext}" in result, f"main.{ext} was stripped"
+
+
+# ------------------------------------------------------------------
+# L3 POS removal: L2 abbreviations survive
+# ------------------------------------------------------------------
+
+def test_rm_survives_level3():
+    c = CavemanCompressor(level=3)
+    result = c.compress("Don't remove the backward compatibility layer.")
+    assert "rm" in result
+
+
+def test_negation_with_remove_preserves_meaning():
+    c = CavemanCompressor(level=3)
+    result = c.compress("Make sure you don't remove the old config.")
+    # "rm" must be present so "no rm" keeps the negation intact
+    assert "rm" in result
+    assert "no" in result

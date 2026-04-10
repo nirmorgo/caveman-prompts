@@ -13,10 +13,12 @@ _BUILTIN_PATTERNS = [
     r'https?://\S+',
     # File paths: ./foo, ../foo, /absolute/path
     r'\.\.?/\S+|(?:/\w[\w./\-]*)',
+    # Bare filenames with common code extensions (utils.py, index.ts, etc.)
+    r'\b\w+\.(?:py|js|ts|tsx|jsx|go|rs|rb|java|c|cpp|h|hpp|cs|swift|kt|sql|yaml|yml|json|toml|ini|cfg|md|txt|html|css|scss|sh|bash|zsh|xml|proto|ex|exs|hs|ml|lua|r|pl|php|vue|svelte)\b',
     # Double-quoted strings
     r'"[^"]*"',
-    # Single-quoted strings
-    r"'[^']*'",
+    # Single-quoted strings (opening quote must not follow a word char, to avoid contractions)
+    r"(?<!\w)'[^'\n]+'",
     # Numbers (int or float)
     r'\b\d+(?:\.\d+)?\b',
     # snake_case identifiers (contain at least one underscore)
@@ -25,8 +27,6 @@ _BUILTIN_PATTERNS = [
     r'\b(?:[A-Z][a-z0-9]+){2,}\b',
     # lowerCamelCase (lowercase start, at least one internal uppercase)
     r'\b[a-z]+(?:[A-Z][a-z0-9]+)+\b',
-    # ALL_CAPS abbreviations (e.g. API, URL, GPT4)
-    r'\b[A-Z]{2,}\d*\b',
 ]
 
 

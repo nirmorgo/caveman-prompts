@@ -55,21 +55,13 @@ Same meaning. Fewer token. Caveman win.
 
 ---
 
-## Me Install
-
-```bash
-git clone https://github.com/nirmorgo/caveman-prompts.git
-cd caveman-prompts
-pip install -e .
-```
-
----
-
 ## Three Level Of Grunt
 
 ### Level 1 — Polite Caveman
 
 Strip filler. Strip pleasantry. Keep full word. Caveman still wear fur but no say "could you please."
+
+Caveman now use brain (spaCy). Understand pattern. Not just word list. Strip greeting, polite opener, filler word, thanks — all gone.
 
 ```text
     ___
@@ -83,12 +75,18 @@ Strip filler. Strip pleasantry. Keep full word. Caveman still wear fur but no sa
 from caveman import CavemanCompressor
 
 c = CavemanCompressor(level=1)
-c.compress("Could you please write a function that returns a list?")
-# -> "write a function that returns a list?"
+c.compress(
+    "Hi! I was basically wondering if you could help me debug this function. "
+    "Just to clarify, it's not returning the correct values from the database. "
+    "Thanks in advance!"
+)
+# -> "help me debug this function. it's not returning the correct values from the database."
 ```
 
-*You say: Can you please help me?*
-*Level 1 say: Help me?*
+Greeting gone. "I was basically wondering if you could" gone. "Just to clarify," gone. "Thanks in advance!" gone. Only meaning survive.
+
+*You say: Hi! I was basically wondering if you could help me. Thanks in advance!*
+*Level 1 say: help me.*
 
 Tribe elder nod. Good enough.
 
@@ -135,16 +133,94 @@ c.compress("Can you please write a function that returns a list?")
 
 | You say | Caveman say |
 | --- | --- |
-| `and` | `+` |
-| `or` | `\|` |
-| `with` | `w/` |
+| `the`, `a`, `an` | *(silence)* |
+| `it`, `they`, `we` | *(silence)* |
 | `without` | `w/o` |
 | `because` | `bc` |
-| `the`, `a`, `an` | *(silence)* |
 | `in order to` | `->` |
 | `for example` | `eg` |
+| `depends on` | `needs` |
+| `not working` | `broken` |
+| `null` / `undefined` | `nil` |
+| `doesn't` / `can't` | `no` |
+| `isn't` / `aren't` | `not` |
 
 Level 3 no care about pronoun. Level 3 only see concept.
+
+---
+
+## See What Happen — Real Examples
+
+**1. Filler-heavy prompt** — greeting, polite opener, thanks all stripped at L1:
+
+```text
+IN:  Hi! I was basically wondering if you could help me debug this function.
+     Just to clarify, it's not returning the correct values from the database.
+     Thanks in advance!
+
+L1:  help me debug this function. it's not returning the correct values from the database.
+L2:  help me debug this fn. it's not returning the correct vals from the db.
+L3:  help debug fn. not returning ok vals db.
+```
+
+*~75% token reduction at L3. Claude still understand. UGH.*
+
+---
+
+**2. Incident report** — filler opener gone, tech terms compressed, caveman logic applied:
+
+```text
+IN:  Don't hesitate to let me know if you need more context, but basically the
+     problem is that the pipeline is not working because it can't connect to the
+     message queue. The connection isn't being established because the credentials
+     are invalid.
+
+L1:  let me know if you need more context, but the problem is that the pipeline is
+     not working because it can't connect to the message queue. The connection isn't
+     being established because the credentials are invalid.
+L2:  let me know if you need more ctx, but the problem is that the pipe is not
+     working because it can't connect to the MQ. The conn isn't being established
+     because the creds are invalid.
+L3:  let know if need more ctx, but bug pipe broken bc no connect MQ. conn not
+     established bc creds bad.
+```
+
+*~59% token reduction at L3.*
+
+---
+
+**3. Bug report with mixed concerns** — greeting, clarifier, and polite request all stripped:
+
+```text
+IN:  Hi! Just to clarify, I'm not sure if this is actually a bug, but basically
+     the deployment pipeline is not working because it can't connect to the message
+     queue. Could you please take a look at the configuration and let me know if the
+     credentials are valid and whether the connection is being established correctly?
+
+L1:  I'm not sure if this is actually a bug, but the deployment pipeline is not
+     working because it can't connect to the message queue. take a look at the
+     configuration and let me know if the credentials are valid and whether the
+     connection is being established correctly?
+L2:  I'm not sure if this is actually a bug, but the deploy pipe is not working
+     because it can't connect to the MQ. take a look at the config and let me know
+     if the creds are valid and whether the conn is being established correctly?
+L3:  not sure if bug, but deploy pipe broken bc no connect MQ. check config and let
+     know if creds ok and whether conn established correctly?
+```
+
+*~57% token reduction at L3.*
+
+---
+
+## Me Install
+
+```bash
+git clone https://github.com/nirmorgo/caveman-prompts.git
+cd caveman-prompts
+pip install -e .
+```
+
+First run download small brain model (~12 MB, one time only). After that — fast. No internet needed.
 
 ---
 
@@ -237,31 +313,6 @@ print(c.compress(prompt))
 # -> refactor fn:
 # [code block untouched]
 ```
-
----
-
-## Real Example — Me Show All Level
-
-```text
-  BEFORE:  ████████████████████████  76 tokens  😰
-  LEVEL 1: ████████████████          52 tokens  😐
-  LEVEL 2: ████████████              38 tokens  🙂
-  LEVEL 3: ███████                   24 tokens  😎
-```
-
-**Original (many word, many token):**
-> *"Can you please write an asynchronous function that retrieves all user records from the database and returns them as a list of objects, and make sure it handles errors properly."*
-
-**Level 1** — filler gone, word still big:
-> *"write an asynchronous function that retrieves all user records from the database and returns them as a list of objects, and make sure it handles errors properly."*
-
-**Level 2** — tech word shrink:
-> *"make an async fn that retrieves all user records from the db and -> them as a list of objs, and make sure it handles errs properly."*
-
-**Level 3** — full caveman, only meaning survive:
-> *"make async fn retrieves all user records db + -> list objs, + ensure handles errs properly."*
-
-Claude still understand. AWS bill weep less. Caveman grunt with satisfaction.
 
 ---
 
