@@ -1,9 +1,27 @@
 """Token-savings report formatting."""
 
+import tiktoken
+
+_enc = tiktoken.get_encoding("o200k_base")
+
 
 def count_tokens(text: str) -> int:
-    """Rough token estimate: ~4 characters per token (OpenAI heuristic)."""
-    return max(1, len(text) // 4)
+    """Count tokens using the GPT-4o tokenizer (o200k_base)."""
+    return len(_enc.encode(text))
+
+
+def token_savings(original: str, compressed: str) -> dict:
+    """Return token-savings stats as a dict."""
+    orig_tok = count_tokens(original)
+    comp_tok = count_tokens(compressed)
+    saved = orig_tok - comp_tok
+    pct = int(saved / orig_tok * 100) if orig_tok > 0 else 0
+    return {
+        "original_tokens": orig_tok,
+        "compressed_tokens": comp_tok,
+        "saved_tokens": saved,
+        "saved_pct": pct,
+    }
 
 
 def print_report(original: str, compressed: str) -> None:

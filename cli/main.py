@@ -13,7 +13,10 @@ from caveman import CavemanCompressor
               help="Show token-savings breakdown.")
 @click.option("--file", "-f", "input_file", type=click.Path(exists=True),
               help="Read prompt from file instead of argument.")
-def cli(prompt: str, level: int, show_report: bool, input_file: str) -> None:
+@click.option("--verbose", "-v", is_flag=True,
+              help="Show how many tokens were saved.")
+def cli(prompt: str, level: int, show_report: bool, input_file: str,
+        verbose: bool) -> None:
     """Compress LLM prompts to their caveman essence."""
     if input_file:
         with open(input_file, "r") as fh:
@@ -31,5 +34,14 @@ def cli(prompt: str, level: int, show_report: bool, input_file: str) -> None:
 
     if show_report:
         c.report(text)
+    elif verbose:
+        compressed, stats = c.compress(text, verbose=True)
+        click.echo(compressed)
+        saved = stats["saved_tokens"]
+        pct = stats["saved_pct"]
+        if saved > 0:
+            click.echo(f"(Saved ~{saved} tokens, {pct}% reduction)", err=True)
+        else:
+            click.echo("(No tokens saved)", err=True)
     else:
         click.echo(c.compress(text))

@@ -9,7 +9,7 @@ description = "Compress LLM prompts to their caveman essence"
 readme = "README.md"
 license = {file = "LICENSE"}
 requires-python = ">=3.9"
-dependencies = ["click>=8.0", "spacy>=3.0"]
+dependencies = ["click>=8.0", "spacy>=3.0", "tiktoken>=0.7"]
 
 [project.scripts]
 caveman = "cli.main:cli"

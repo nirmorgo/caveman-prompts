@@ -10,7 +10,7 @@ from .rules import (
     LEVEL3_WORD_REPLACEMENTS,
 )
 from .sacred import build_sacred_regex, protect, restore
-from .report import print_report
+from .report import print_report, token_savings
 from .nlp import apply_level1_nlp, apply_level2_nlp, apply_level3_nlp
 
 # Pre-compiled regexes — all static rule data compiled once at import time.
@@ -52,15 +52,23 @@ class CavemanCompressor:
     # Public API
     # ------------------------------------------------------------------
 
-    def compress(self, text: str) -> str:
-        """Return the compressed version of *text*."""
+    def compress(self, text: str, verbose: bool = False):
+        """Return the compressed version of *text*.
+
+        When *verbose* is True, return a (compressed_text, stats) tuple
+        where stats contains: original_tokens, compressed_tokens,
+        saved_tokens, saved_pct.
+        """
         protected, placeholders = protect(text, self._sacred_regex)
         result = self._apply_compression(protected)
         result = restore(result, placeholders)
         result = re.sub(r"[ \t]+", " ", result).strip()
         result = re.sub(r"\n{3,}", "\n\n", result)
         # Never erase the entire prompt — return original if nothing survives
-        return result if result else text.strip()
+        result = result if result else text.strip()
+        if verbose:
+            return result, token_savings(text, result)
+        return result
 
     def report(self, text: str) -> None:
         """Compress *text* and pretty-print the token-savings breakdown."""

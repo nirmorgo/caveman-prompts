@@ -163,7 +163,7 @@ L2:  help me debug this fn. it's not returning the correct vals from the db.
 L3:  help debug fn. not returning ok vals db.
 ```
 
-*~75% token reduction at L3. Claude still understand. UGH.*
+*~69% token reduction at L3. Claude still understand. UGH.*
 
 ---
 
@@ -185,7 +185,7 @@ L3:  let know if need more ctx, but bug pipe broken bc no connect MQ. conn not
      established bc creds bad.
 ```
 
-*~59% token reduction at L3.*
+*~46% token reduction at L3.*
 
 ---
 
@@ -208,7 +208,7 @@ L3:  not sure if bug, but deploy pipe broken bc no connect MQ. check config and 
      know if creds ok and whether conn established correctly?
 ```
 
-*~57% token reduction at L3.*
+*~53% token reduction at L3.*
 
 ---
 
@@ -244,6 +244,29 @@ c.report("Can you please write a function that returns a list of integers?")
 ```
 
 Print breakdown. Show token before, token after. Very satisfying. Like after big hunt.
+
+### Verbose Mode — Caveman Count Token
+
+Want compressed text *and* know how many token saved? Use verbose.
+
+```python
+c = CavemanCompressor(level=3)
+compressed, stats = c.compress("Could you please write a function that returns a list of integers?", verbose=True)
+print(compressed)
+# -> make fn -> list ints?
+print(stats)
+# -> {'original_tokens': 13, 'compressed_tokens': 6, 'saved_tokens': 7, 'saved_pct': 53}
+```
+
+Or from CLI:
+
+```bash
+caveman -l3 -v "Could you please write a function that returns a list of integers?"
+# stdout: make fn -> list ints?
+# stderr: (Saved ~7 tokens, 53% reduction)
+```
+
+Token count real. Not guess. Caveman use tiktoken (GPT-4o tokenizer). Exact number. No lie.
 
 ### Chain Many Thing Together
 
@@ -323,6 +346,7 @@ print(c.compress(prompt))
 | Method | What Do |
 | --- | --- |
 | `.compress(text)` | Squish prompt. Return small version. |
+| `.compress(text, verbose=True)` | Squish prompt. Also return token stats. |
 | `.report(text)` | Show token savings. Print pretty. |
 | `.set_level(n)` | Change grunt power (1–3). Chain ok. |
 | `.add_sacred(word)` | Protect word forever. Caveman no touch. |
