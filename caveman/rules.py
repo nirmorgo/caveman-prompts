@@ -34,7 +34,9 @@ LEVEL2_PHRASES = [
     ("end to end", "e2e"),
 ]
 
-# Single-word substitutions
+# Single-word substitutions.
+# Rules whose abbreviation costs MORE tokens than the original (o200k_base)
+# have been removed (e.g. "functions"→"fns" is 1 tok→2 tok).
 LEVEL2_SUBS = {
     # --- Data types ---
     "boolean": "bool",
@@ -46,26 +48,19 @@ LEVEL2_SUBS = {
     "object": "obj",
     "objects": "objs",
     "string": "str",
-    "strings": "strs",
     # --- Code constructs ---
     "argument": "arg",
     "arguments": "args",
     "attribute": "attr",
     "attributes": "attrs",
     "callback": "cb",
-    "callbacks": "cbs",
     "context": "ctx",
-    "contexts": "ctxs",
     "definition": "def",
     "definitions": "defs",
     "expression": "expr",
-    "expressions": "exprs",
     "function": "fn",
-    "functions": "fns",
     "implementation": "impl",
     "implementations": "impls",
-    "interface": "iface",
-    "interfaces": "ifaces",
     "iterator": "iter",
     "iterators": "iters",
     "parameter": "param",
@@ -77,30 +72,21 @@ LEVEL2_SUBS = {
     "reference": "ref",
     "references": "refs",
     "structure": "struct",
-    "structures": "structs",
     "template": "tmpl",
-    "templates": "tmpls",
     "token": "tok",
-    "tokens": "toks",
     "value": "val",
     "values": "vals",
     "variable": "var",
     "variables": "vars",
     # --- Architecture ---
     "channel": "chan",
-    "channels": "chans",
     "component": "comp",
-    "components": "comps",
     "container": "ctr",
-    "containers": "ctrs",
     "controller": "ctrl",
-    "controllers": "ctrls",
     "dependency": "dep",
     "dependencies": "deps",
     "exception": "exc",
-    "exceptions": "excs",
     "instance": "inst",
-    "instances": "insts",
     "library": "lib",
     "libraries": "libs",
     "middleware": "mw",
@@ -108,26 +94,19 @@ LEVEL2_SUBS = {
     "modules": "mods",
     "namespace": "ns",
     "package": "pkg",
-    "packages": "pkgs",
     "processor": "proc",
-    "processors": "procs",
     "service": "svc",
-    "services": "svcs",
     "subscription": "sub",
     "subscriptions": "subs",
     # --- Infrastructure ---
     "address": "addr",
-    "addresses": "addrs",
     "application": "app",
     "applications": "apps",
     "buffer": "buf",
-    "buffers": "bufs",
     "configuration": "config",
     "configurations": "configs",
     "connection": "conn",
-    "connections": "conns",
     "credential": "cred",
-    "credentials": "creds",
     "database": "db",
     "databases": "dbs",
     "deployment": "deploy",
@@ -138,17 +117,14 @@ LEVEL2_SUBS = {
     "environment": "env",
     "environments": "envs",
     "infrastructure": "infra",
-    "kubernetes": "k8s",
     "memory": "mem",
     "metadata": "meta",
     "migration": "mig",
     "migrations": "migs",
     "notification": "notif",
-    "notifications": "notifs",
     "operation": "op",
     "operations": "ops",
     "permission": "perm",
-    "permissions": "perms",
     "pipeline": "pipe",
     "pipelines": "pipes",
     "repository": "repo",
@@ -156,11 +132,9 @@ LEVEL2_SUBS = {
     "source": "src",
     "temporary": "tmp",
     "transaction": "tx",
-    "transactions": "txs",
     "version": "ver",
     "versions": "vers",
     # --- ML / AI ---
-    "checkpoint": "ckpt",
     "embedding": "emb",
     "embeddings": "embs",
     "evaluation": "eval",
@@ -172,16 +146,12 @@ LEVEL2_SUBS = {
     "prediction": "pred",
     "predictions": "preds",
     "vector": "vec",
-    "vectors": "vecs",
     # --- Descriptors ---
     "administrator": "admin",
     "asynchronous": "async",
     "authentication": "auth",
-    "authorization": "authz",
     "collection": "coll",
-    "collections": "colls",
     "command": "cmd",
-    "commands": "cmds",
     "development": "dev",
     "document": "doc",
     "documents": "docs",
@@ -199,9 +169,7 @@ LEVEL2_SUBS = {
     "previous": "prev",
     "production": "prod",
     "request": "req",
-    "requests": "reqs",
     "response": "resp",
-    "responses": "resps",
     "specification": "spec",
     "specifications": "specs",
     "synchronous": "sync",
@@ -216,7 +184,6 @@ LEVEL2_SUBS = {
     "decode": "dec",
     "delete": "del",
     "describe": "desc",
-    "deserialize": "deser",
     "encode": "enc",
     "execute": "exec",
     "generate": "gen",
@@ -234,6 +201,9 @@ LEVEL2_SUBS = {
     "validate": "valid",
     "write": "make",
 }
+
+# Level 2 phrase simplifications and filler adverb removal are handled by
+# spaCy Matcher patterns in caveman/nlp.py (lemma / POS–based matching).
 
 # ---------------------------------------------------------------------------
 # Level 3 — full caveman: aggressive stripping + symbolic shorthand
@@ -291,7 +261,8 @@ LEVEL3_PHRASE_REPLACEMENTS = [
 # Single-word replacements
 LEVEL3_WORD_REPLACEMENTS = {
     # Connectors
-    "without": "w/o",
+    # NOTE: "without" → "w/o" removed — "w/o" costs 2 BPE tokens vs 1 for
+    # "without", making the substitution counter-productive.
     "because": "bc",
     "however": "but",
     "although": "but",

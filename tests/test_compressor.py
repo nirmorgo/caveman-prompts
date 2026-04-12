@@ -38,38 +38,38 @@ def test_level1_keeps_content_words():
 # Level 2
 # ------------------------------------------------------------------
 
-def test_level2_abbreviates_function():
+def test_level2_abbreviates_utilize():
     c = CavemanCompressor(level=2)
-    result = c.compress("write a function")
-    assert "fn" in result
-    assert "function" not in result.lower()
+    result = c.compress("utilize the asynchronous infrastructure")
+    assert "use" in result
+    assert "utilize" not in result.lower()
 
 
-def test_level2_abbreviates_database():
+def test_level2_abbreviates_asynchronous():
     c = CavemanCompressor(level=2)
-    result = c.compress("query the database")
-    assert "db" in result
-    assert "database" not in result.lower()
+    result = c.compress("handle the asynchronous request")
+    assert "async" in result
+    assert "asynchronous" not in result.lower()
 
 
-def test_level2_returns_becomes_arrow():
+def test_level2_abbreviates_infrastructure():
     c = CavemanCompressor(level=2)
-    result = c.compress("a function that returns a list")
-    assert "->" in result
+    result = c.compress("deploy the infrastructure")
+    assert "infra" in result
 
 
-def test_level2_action_shortcut_write():
+def test_level2_abbreviates_specification():
     c = CavemanCompressor(level=2)
-    result = c.compress("write a function")
-    assert "make" in result
+    result = c.compress("read the specification document")
+    assert "spec" in result
 
 
 def test_level2_preserves_filler_removal():
     c = CavemanCompressor(level=2)
-    result = c.compress("Can you please write a function that returns a list?")
+    result = c.compress("Can you please optimize the asynchronous infrastructure?")
     assert "can you please" not in result.lower()
-    assert "fn" in result
-    assert "->" in result
+    assert "opt" in result
+    assert "async" in result
 
 
 # ------------------------------------------------------------------
@@ -84,12 +84,6 @@ def test_level3_removes_articles():
 
 
 def test_level3_removes_that():
-    c = CavemanCompressor(level=3)
-    result = c.compress("a function that returns something")
-    assert " that " not in f" {result} "
-
-
-def test_level3_removes_relative_that():
     c = CavemanCompressor(level=3)
     result = c.compress("a function that returns something")
     assert " that " not in f" {result} "

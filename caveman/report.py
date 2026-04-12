@@ -25,10 +25,11 @@ def token_savings(original: str, compressed: str) -> dict:
 
 
 def print_report(original: str, compressed: str) -> None:
-    orig_tok = count_tokens(original)
-    comp_tok = count_tokens(compressed)
-    saved = orig_tok - comp_tok
-    pct = int(saved / orig_tok * 100) if orig_tok > 0 else 0
+    stats = token_savings(original, compressed)
+    orig_tok = stats["original_tokens"]
+    comp_tok = stats["compressed_tokens"]
+    saved = stats["saved_tokens"]
+    pct = stats["saved_pct"]
 
     _MAX = 60
     orig_display = original if len(original) <= _MAX else original[:_MAX] + "..."

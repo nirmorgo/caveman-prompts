@@ -25,6 +25,10 @@ _BUILTIN_PATTERNS = [
     r'\b\w+_\w+\b',
     # PascalCase / UpperCamelCase (two or more TitleCase segments)
     r'\b(?:[A-Z][a-z0-9]+){2,}\b',
+    # Mixed-case identifiers with a lowercase→uppercase transition
+    # (catches PostgreSQL, RabbitMQ, GraphQL, FastAPI, macOS, etc.
+    #  that the PascalCase / camelCase patterns miss)
+    r'\b[A-Za-z]*[a-z][A-Z][A-Za-z]*\b',
     # lowerCamelCase (lowercase start, at least one internal uppercase)
     r'\b[a-z]+(?:[A-Z][a-z0-9]+)+\b',
 ]

@@ -5,11 +5,33 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "caveman-prompts"
 version = "0.1.0"
-description = "Compress LLM prompts to their caveman essence"
+description = "Compress LLM prompts to their caveman essence — less token, same meaning, much save"
 readme = "README.md"
-license = {file = "LICENSE"}
+license = "MIT"
 requires-python = ">=3.9"
+authors = [{name = "Nir Morgulis"}]
+keywords = ["llm", "prompt", "compression", "token", "optimization", "nlp", "caveman"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Text Processing :: Linguistic",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
 dependencies = ["click>=8.0", "spacy>=3.0", "tiktoken>=0.7"]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0"]
+
+[project.urls]
+Homepage = "https://github.com/nirmorgo/caveman-prompts"
+Repository = "https://github.com/nirmorgo/caveman-prompts"
+Issues = "https://github.com/nirmorgo/caveman-prompts/issues"
 
 [project.scripts]
 caveman = "cli.main:cli"

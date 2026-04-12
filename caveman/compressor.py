@@ -11,7 +11,12 @@ from .rules import (
 )
 from .sacred import build_sacred_regex, protect, restore
 from .report import print_report, token_savings
-from .nlp import apply_level1_nlp, apply_level2_nlp, apply_level3_nlp
+from .nlp import (
+    apply_level1_nlp,
+    apply_level2_nlp,
+    apply_level2_phrases_nlp,
+    apply_level3_nlp,
+)
 
 # Pre-compiled regexes — all static rule data compiled once at import time.
 _L2_PHRASE_RE: list[tuple[re.Pattern, str]] = [
@@ -29,14 +34,21 @@ _L3_WORD_RE: list[tuple[re.Pattern, str]] = [
     for word, repl in LEVEL3_WORD_REPLACEMENTS.items()
 ]
 
-# Replacement values that must survive POS-based removal (e.g. "w/o" tagged as ADP, "no" as DET).
+# Replacement values that must survive POS-based removal (e.g. "no" tagged as DET).
 # L2 abbreviations are included because spaCy can mistag unknown words like "rm" as ADP.
-_L3_SKIP_LOWER: frozenset[str] = frozenset(LEVEL3_WORD_REPLACEMENTS.values()) | frozenset(LEVEL2_SUBS.values())
+# "without" is explicitly protected — it is an ADP but carries negation meaning.
+_L3_SKIP_LOWER: frozenset[str] = (
+    frozenset(LEVEL3_WORD_REPLACEMENTS.values())
+    | frozenset(LEVEL2_SUBS.values())
+    | {"without"}
+)
 
 _L3_REMOVAL_RE = re.compile(
     r"\b(?:" + "|".join(
         re.escape(w) for w in sorted(LEVEL3_REMOVALS, key=len, reverse=True)
-    ) + r")\b",
+    # Negative lookahead: don't match words attached to a contraction suffix
+    # (e.g. "that" in "that's") — removing the host word orphans the suffix.
+    ) + r")\b(?!')",
     re.IGNORECASE,
 )
 
@@ -45,7 +57,7 @@ class CavemanCompressor:
     def __init__(self, level: int = 2) -> None:
         self._level = level
         self._sacred_words: list[str] = []
-        self._custom_rules: dict[str, str] = {}
+        self._custom_rules: list[tuple[re.Pattern, str]] = []
         self._sacred_regex = build_sacred_regex(self._sacred_words)
 
     # ------------------------------------------------------------------
@@ -61,9 +73,14 @@ class CavemanCompressor:
         """
         protected, placeholders = protect(text, self._sacred_regex)
         result = self._apply_compression(protected)
-        result = restore(result, placeholders)
+        # Normalize whitespace BEFORE restoring sacred content so that
+        # indentation inside code blocks is not collapsed.
         result = re.sub(r"[ \t]+", " ", result).strip()
         result = re.sub(r"\n{3,}", "\n\n", result)
+        # Clean up orphaned leading/trailing punctuation left after filler removal
+        result = re.sub(r"^[,;:\s]+", "", result)
+        result = re.sub(r"\n[,;:\s]+", "\n", result)
+        result = restore(result, placeholders)
         # Never erase the entire prompt — return original if nothing survives
         result = result if result else text.strip()
         if verbose:
@@ -85,7 +102,8 @@ class CavemanCompressor:
         return self
 
     def add_rule(self, from_word: str, to_word: str) -> "CavemanCompressor":
-        self._custom_rules[from_word.lower()] = to_word
+        pattern = re.compile(r"\b" + re.escape(from_word.lower()) + r"\b", re.IGNORECASE)
+        self._custom_rules.append((pattern, to_word))
         return self
 
     # ------------------------------------------------------------------
@@ -113,13 +131,8 @@ class CavemanCompressor:
         return ""
 
     def _apply_up_to_level(self, text: str, level: int) -> str:
-        for from_word, to_word in self._custom_rules.items():
-            text = re.sub(
-                r"\b" + re.escape(from_word) + r"\b",
-                to_word,
-                text,
-                flags=re.IGNORECASE,
-            )
+        for pattern, to_word in self._custom_rules:
+            text = pattern.sub(to_word, text)
 
         if level >= 1:
             text = apply_level1_nlp(text)
@@ -131,8 +144,12 @@ class CavemanCompressor:
         return text
 
     def _apply_level2(self, text: str) -> str:
+        # NLP-based phrase simplification (Matcher with lemma/POS patterns)
+        text = apply_level2_phrases_nlp(text)
+        # Tech abbreviation phrases (regex — these are simple acronym expansions)
         for pattern, abbrev in _L2_PHRASE_RE:
             text = pattern.sub(abbrev, text)
+        # POS-gated filler adverb removal + determiner removal + tech word subs
         return apply_level2_nlp(text, LEVEL2_SUBS)
 
     def _apply_level3(self, text: str) -> str:

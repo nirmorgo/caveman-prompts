@@ -8,8 +8,32 @@ Subsequent runs load the cached model with no network activity.
 import re
 
 _nlp = None
-_matcher = None
+_matcher = None       # L1 filler matcher
+_l2_matcher = None    # L2 phrase simplification matcher
+_l2_replacements: dict[str, str] = {}  # label → replacement text
 _ready: bool = False
+
+# Plural abbreviations whose space-prefixed form costs more BPE tokens than
+# the original word (e.g. " databases" 1 tok → " dbs" 2 tok).  Computed once
+# at import time via tiktoken.
+_L2_SPACE_LOSERS: frozenset[str] = frozenset()
+
+
+def _build_space_losers() -> frozenset[str]:
+    """Return the set of L2 abbreviation values that tokenize worse with a
+    leading space than their source words."""
+    import tiktoken  # noqa: PLC0415
+    from .rules import LEVEL2_SUBS  # noqa: PLC0415
+
+    enc = tiktoken.get_encoding("o200k_base")
+    losers: set[str] = set()
+    for word, abbrev in LEVEL2_SUBS.items():
+        if len(enc.encode(" " + abbrev)) > len(enc.encode(" " + word)):
+            losers.add(abbrev)
+    return frozenset(losers)
+
+
+_L2_SPACE_LOSERS = _build_space_losers()
 
 # ---------------------------------------------------------------------------
 # Level 1 — structural filler patterns
@@ -133,6 +157,158 @@ _FILLER_WORDS: frozenset[str] = frozenset({
 })
 
 # ---------------------------------------------------------------------------
+# Level 2 — Matcher-based phrase simplification
+#
+# Unlike L1 (which removes spans), L2 replaces multi-word phrases with shorter
+# equivalents.  Using spaCy Matcher patterns instead of regex lets us match on
+# lemma and POS, catching inflected forms that regex misses:
+#   "was able to", "will be able to", "depended on", "looked at", …
+# ---------------------------------------------------------------------------
+
+_L2_PHRASE_PATTERNS: list[tuple[str, list[dict], str]] = [
+    # --- Obligation / ability (lemma-based — catches all inflections) ---
+    # "is/was/will be/would be able to" → "can"
+    ("L2_ABLE_TO", [
+        {"POS": "AUX", "OP": "+"},
+        {"LOWER": "able"},
+        {"LOWER": "to"},
+    ], "can"),
+    # "needs/needed/needing to", "has/had/having to" → "must"
+    ("L2_MUST", [
+        {"LEMMA": {"IN": ["need", "have"]}, "POS": {"IN": ["VERB", "AUX"]}},
+        {"LOWER": "to"},
+    ], "must"),
+    # --- Action verbs (lemma-based) ---
+    # "take/took/taking a look at" → "check"
+    ("L2_TAKE_LOOK_AT", [
+        {"LEMMA": "take"},
+        {"POS": "DET", "OP": "?"},
+        {"LEMMA": "look"},
+        {"LOWER": "at"},
+    ], "check"),
+    # "look/looks/looked/looking at" → "check"
+    ("L2_LOOK_AT", [
+        {"LEMMA": "look", "POS": "VERB"},
+        {"LOWER": "at"},
+    ], "check"),
+    # "look/looks/looked/looking for" → "find"
+    ("L2_LOOK_FOR", [
+        {"LEMMA": "look", "POS": "VERB"},
+        {"LOWER": "for"},
+    ], "find"),
+    # "make/makes/made/making sure" → "ensure"
+    ("L2_MAKE_SURE", [
+        {"LEMMA": "make"},
+        {"LOWER": "sure"},
+    ], "ensure"),
+    # "depend/depends/depended/depending on" → "needs"
+    ("L2_DEPEND_ON", [
+        {"LEMMA": {"IN": ["depend", "rely"]}},
+        {"LOWER": "on"},
+    ], "needs"),
+    # "not working / not functioning" → "broken"
+    ("L2_NOT_WORKING", [
+        {"LOWER": {"IN": ["not", "n't"]}},
+        {"LEMMA": {"IN": ["work", "function"]}, "POS": "VERB"},
+    ], "broken"),
+    # --- Exact-match phrases (no inflection, but unified in one system) ---
+    ("L2_IN_ORDER_TO", [
+        {"LOWER": "in"},
+        {"LOWER": "order"},
+        {"LOWER": "to"},
+    ], "to"),
+    ("L2_WHETHER_OR_NOT", [
+        {"LOWER": "whether"},
+        {"LOWER": "or"},
+        {"LOWER": "not"},
+    ], "if"),
+    ("L2_AS_WELL_AS", [
+        {"LOWER": "as"},
+        {"LOWER": "well"},
+        {"LOWER": "as"},
+    ], "and"),
+    ("L2_IN_ADDITION_TO", [
+        {"LOWER": "in"},
+        {"LOWER": "addition"},
+        {"LOWER": "to"},
+    ], "and"),
+    ("L2_AS_LONG_AS", [
+        {"LOWER": "as"},
+        {"LOWER": "long"},
+        {"LOWER": "as"},
+    ], "while"),
+    ("L2_AS_SOON_AS", [
+        {"LOWER": "as"},
+        {"LOWER": "soon"},
+        {"LOWER": "as"},
+    ], "when"),
+    ("L2_AS_A_RESULT", [
+        {"LOWER": "as"},
+        {"POS": "DET"},
+        {"LOWER": "result"},
+    ], "so"),
+    ("L2_IN_OTHER_WORDS", [
+        {"LOWER": "in"},
+        {"LOWER": "other"},
+        {"LOWER": "words"},
+    ], "i.e."),
+    ("L2_FOR_EXAMPLE", [
+        {"LOWER": "for"},
+        {"LOWER": {"IN": ["example", "instance"]}},
+    ], "e.g."),
+    ("L2_SUCH_AS", [
+        {"LOWER": "such"},
+        {"LOWER": "as"},
+    ], "e.g."),
+    ("L2_INSTEAD_OF", [
+        {"LOWER": "instead"},
+        {"LOWER": "of"},
+    ], "not"),
+    ("L2_SIMILAR_TO", [
+        {"LOWER": "similar"},
+        {"LOWER": "to"},
+    ], "like"),
+    ("L2_A_LOT_OF", [
+        {"POS": "DET"},
+        {"LOWER": "lot"},
+        {"LOWER": "of"},
+    ], "many"),
+    ("L2_IN_CASE", [
+        {"LOWER": "in"},
+        {"LOWER": "case"},
+    ], "if"),
+    ("L2_DUE_TO", [
+        {"LOWER": "due"},
+        {"LOWER": "to"},
+    ], "because"),
+    ("L2_RIGHT_NOW", [
+        {"LOWER": "right"},
+        {"LOWER": "now"},
+    ], "now"),
+    ("L2_AT_THIS_POINT", [
+        {"LOWER": "at"},
+        {"LOWER": "this"},
+        {"LOWER": "point"},
+    ], "now"),
+    ("L2_AT_LEAST", [
+        {"LOWER": "at"},
+        {"LOWER": "least"},
+    ], "min"),
+    ("L2_AT_MOST", [
+        {"LOWER": "at"},
+        {"LOWER": "most"},
+    ], "max"),
+]
+
+# Filler adverb lemmas safe to remove when POS-tagged as ADV.
+# POS gating prevents false positives (e.g. "rather" in "would rather").
+_L2_FILLER_ADV_LEMMAS: frozenset[str] = frozenset({
+    "very", "really", "quite", "rather",
+    "currently", "actually",
+    "certainly", "definitely",
+})
+
+# ---------------------------------------------------------------------------
 # Level 2 — POS constraints for single-word substitutions
 #
 # Maps word (lower) → expected spaCy POS tag. Substitution is skipped when
@@ -143,34 +319,22 @@ _FILLER_WORDS: frozenset[str] = frozenset({
 LEVEL2_POS_CONSTRAINTS: dict[str, str] = {
     # Nouns only
     "function":    "NOUN",
-    "functions":   "NOUN",
     "string":      "NOUN",
-    "strings":     "NOUN",
     "value":       "NOUN",
     "values":      "NOUN",
     "source":      "NOUN",
     "token":       "NOUN",
-    "tokens":      "NOUN",
     "instance":    "NOUN",
-    "instances":   "NOUN",
     "version":     "NOUN",
     "versions":    "NOUN",
     "channel":     "NOUN",
-    "channels":    "NOUN",
     "deployment":  "NOUN",
-    "deployments": "NOUN",
     "migration":   "NOUN",
-    "migrations":  "NOUN",
     "embedding":   "NOUN",
-    "embeddings":  "NOUN",
     "vector":      "NOUN",
-    "vectors":     "NOUN",
     "gradient":    "NOUN",
-    "gradients":   "NOUN",
     "prediction":  "NOUN",
-    "predictions": "NOUN",
     "evaluation":  "NOUN",
-    "checkpoint":  "NOUN",
     "inference":   "NOUN",
     # Verbs only
     "build":         "VERB",
@@ -190,7 +354,6 @@ LEVEL2_POS_CONSTRAINTS: dict[str, str] = {
     "utilize":       "VERB",
     "using":         "VERB",
     "serialize":     "VERB",
-    "deserialize":   "VERB",
     "encode":        "VERB",
     "decode":        "VERB",
     "validate":      "VERB",
@@ -205,7 +368,7 @@ LEVEL2_POS_CONSTRAINTS: dict[str, str] = {
 
 def _setup() -> None:
     """Load the spaCy model, downloading it on first use if necessary."""
-    global _nlp, _matcher, _ready
+    global _nlp, _matcher, _l2_matcher, _l2_replacements, _ready
     if _ready:
         return
 
@@ -219,9 +382,16 @@ def _setup() -> None:
         spacy.cli.download("en_core_web_sm")
         _nlp = spacy.load("en_core_web_sm", disable=["ner", "parser"])
 
+    # L1 filler matcher
     _matcher = Matcher(_nlp.vocab)
     for label, pattern in _FILLER_PATTERNS:
         _matcher.add(label, [pattern])
+
+    # L2 phrase simplification matcher
+    _l2_matcher = Matcher(_nlp.vocab)
+    for label, pattern, replacement in _L2_PHRASE_PATTERNS:
+        _l2_matcher.add(label, [pattern])
+        _l2_replacements[label] = replacement
 
     _ready = True
 
@@ -292,18 +462,117 @@ def apply_level1_nlp(text: str) -> str:
     return _remove_spans(intermediate, spans2)
 
 
+def apply_level2_phrases_nlp(text: str) -> str:
+    """Replace wordy multi-word phrases with concise equivalents using spaCy.
+
+    Uses the Matcher with lemma / POS patterns so that inflected forms are
+    caught automatically (e.g. "was able to", "depended on", "looked at").
+    Longer matches take priority over shorter overlapping ones.
+    """
+    _setup()
+
+    doc = _nlp(text)
+    matches = _l2_matcher(doc)
+    if not matches:
+        return text
+
+    # Build (start_char, end_char, replacement) tuples.
+    # Prefer longer spans when matches overlap.
+    spans: list[tuple[int, int, int, str]] = []  # (start, end, length, repl)
+    for match_id, start, end in matches:
+        label = _nlp.vocab.strings[match_id]
+        repl = _l2_replacements[label]
+        start_char = doc[start].idx
+        end_tok = doc[end - 1]
+        end_char = end_tok.idx + len(end_tok.text_with_ws)
+        spans.append((start_char, end_char, end - start, repl))
+
+    # Sort: longest span first, then by position — greedily accept non-overlapping
+    spans.sort(key=lambda s: (-s[2], s[0]))
+    accepted: list[tuple[int, int, str]] = []
+    for start_c, end_c, _length, repl in spans:
+        if not any(start_c < ae and end_c > as_ for as_, ae, _ in accepted):
+            accepted.append((start_c, end_c, repl))
+    accepted.sort()
+
+    # Rebuild text with replacements
+    parts: list[str] = []
+    cursor = 0
+    for start_c, end_c, repl in accepted:
+        parts.append(text[cursor:start_c])
+        parts.append(repl)
+        # Preserve one trailing space if the original span had one
+        if end_c <= len(text) and (end_c == len(text) or text[end_c - 1] == " "):
+            parts.append(" ")
+        cursor = end_c
+    parts.append(text[cursor:])
+
+    return re.sub(r"[ \t]+", " ", "".join(parts)).strip()
+
+
 def apply_level2_nlp(text: str, subs: dict[str, str]) -> str:
-    """Apply word substitutions, skipping tokens whose POS doesn't match constraints."""
+    """POS-gated token removal and tech abbreviations.
+
+    Single spaCy parse, four token-level operations:
+    1. Remove "that" when used as relative pronoun or conjunction (PRON/SCONJ).
+       Keeps demonstrative "that" (DET) — "use **that** function" is meaningful.
+    2. Remove filler adverbs (ADV-tagged tokens whose lemma is in the filler set).
+    3. Remove determiners (a, an, the, every, …).
+    4. Apply single-word tech abbreviations with POS constraints.
+    """
     _setup()
 
     doc = _nlp(text)
     parts: list[str] = []
     for token in doc:
+        # --- "that" removal (relative pronoun / conjunction only) ---
+        if token.lower_ == "that" and token.pos_ in {"PRON", "SCONJ"} \
+                and "\x00" not in token.text:
+            next_tok = doc[token.i + 1] if token.i + 1 < len(doc) else None
+            # Keep if followed by contraction suffix ("that's")
+            if next_tok and next_tok.text.startswith("'"):
+                parts.append(token.text_with_ws)
+                continue
+            continue  # drop it
+
+        # --- Filler adverb removal (POS-gated) ---
+        if token.pos_ == "ADV" and token.lemma_ in _L2_FILLER_ADV_LEMMAS \
+                and "\x00" not in token.text:
+            continue  # drop the filler adverb
+
+        # --- Determiner removal ---
+        if token.pos_ == "DET" and "\x00" not in token.text:
+            # Keep determiners adjacent to hyphens (e.g. "all-or-nothing")
+            next_tok = doc[token.i + 1] if token.i + 1 < len(doc) else None
+            prev_tok = doc[token.i - 1] if token.i > 0 else None
+            if (next_tok and next_tok.text == "-") or (prev_tok and prev_tok.text == "-"):
+                parts.append(token.text_with_ws)
+                continue
+            # Keep determiners followed by a contraction suffix ("that's")
+            if next_tok and next_tok.text.startswith("'"):
+                parts.append(token.text_with_ws)
+                continue
+            continue  # drop the determiner
+
+        # --- Single-word tech abbreviations ---
         word_lower = token.lower_
         if word_lower in subs:
             constraint = LEVEL2_POS_CONSTRAINTS.get(word_lower)
             if constraint is None or token.pos_ == constraint:
+                # Skip if the token is part of a hyphenated compound — the
+                # abbreviation almost always costs more BPE tokens when glued
+                # to a hyphen (e.g. "-service" 1 tok → "-svc" 2 tok).
+                prev_tok = doc[token.i - 1] if token.i > 0 else None
+                next_tok = doc[token.i + 1] if token.i + 1 < len(doc) else None
+                if (prev_tok and prev_tok.text == "-") or (next_tok and next_tok.text == "-"):
+                    parts.append(token.text_with_ws)
+                    continue
                 abbrev = subs[word_lower]
+                # Skip plurals whose abbreviated form costs extra BPE tokens
+                # (e.g. " databases" 1 tok → " dbs" 2 tok).
+                if abbrev in _L2_SPACE_LOSERS:
+                    parts.append(token.text_with_ws)
+                    continue
                 # Preserve original capitalisation
                 if token.text[0].isupper() and abbrev[0].islower():
                     abbrev = abbrev[0].upper() + abbrev[1:]
@@ -337,9 +606,18 @@ def apply_level3_nlp(text: str, skip_lower: frozenset[str] = frozenset()) -> str
     for token in doc:
         if token.pos_ in {"DET", "AUX", "PRON", "ADP"} and token.lower_ not in skip_lower \
                 and "\x00" not in token.text:
-            # Don't strip tokens that are part of a hyphenated compound (e.g. "in-memory")
+            # Don't strip contraction suffixes ('s, 're, 've, 'll, 'd, 'm) —
+            # they are morphologically bound to the previous word, and removing
+            # them causes the host word to merge with the next token (no space).
+            if token.text.startswith("'"):
+                continue
             next_tok = doc[token.i + 1] if token.i + 1 < len(doc) else None
             prev_tok = doc[token.i - 1] if token.i > 0 else None
+            # Don't strip host words followed by a contraction suffix —
+            # removing "It" from "It's" would orphan "'s".
+            if next_tok and next_tok.text.startswith("'"):
+                continue
+            # Don't strip tokens that are part of a hyphenated compound (e.g. "in-memory")
             if (next_tok and next_tok.text == "-") or (prev_tok and prev_tok.text == "-"):
                 continue
             spans.append((token.idx, token.idx + len(token.text_with_ws)))
